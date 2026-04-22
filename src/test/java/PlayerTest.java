@@ -1,48 +1,73 @@
-import org.example.Player;
+package org.example;
+
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Test class for the Player class.
- * This class contains unit tests for the getId method of the Player class.
- */
-public class PlayerTest {
+class PlayerTest {
 
-    /**
-     * Test to verify that getId correctly returns the ID provided during Player object creation.
-     */
     @Test
-    public void testGetId_validId() {
-        // Arrange
-        int id = 5;
-        String nickname = "Gamer";
-        int age = 25;
-        Player player = new Player(id, nickname, age);
+    void constructorStoresValuesAndTrimsNickname() {
+        Player player = new Player(7, "  Ace  ", 21);
 
-        // Act
-        int result = player.getId();
-
-        // Assert
-        assertEquals(id, result, "The returned ID should match the ID provided during object creation.");
+        assertEquals(7, player.getId());
+        assertEquals("Ace", player.getNickname());
+        assertEquals(21, player.getAge());
     }
 
-    /**
-     * Test to verify that getId correctly returns the ID when the ID is a large, positive number.
-     */
     @Test
-    public void testGetId_largeId() {
-        // Arrange
-        int id = 999999;
-        String nickname = "ProGamer";
-        int age = 30;
-        Player player = new Player(id, nickname, age);
+    void constructorRejectsZeroId() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> new Player(0, "Ace", 21));
 
-        // Act
-        int result = player.getId();
-
-        // Assert
-        assertEquals(id, result, "The returned ID should match the large ID provided during object creation.");
+        assertEquals("Player ID must be greater than 0.", ex.getMessage());
     }
 
+    @Test
+    void constructorRejectsNegativeId() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> new Player(-1, "Ace", 21));
+
+        assertEquals("Player ID must be greater than 0.", ex.getMessage());
+    }
+
+    @Test
+    void constructorRejectsNullNickname() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> new Player(1, null, 21));
+
+        assertEquals("Nickname cannot be empty.", ex.getMessage());
+    }
+
+    @Test
+    void constructorRejectsBlankNickname() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> new Player(1, "   ", 21));
+
+        assertEquals("Nickname cannot be empty.", ex.getMessage());
+    }
+
+    @Test
+    void constructorRejectsZeroAge() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> new Player(1, "Ace", 0));
+
+        assertEquals("Age must be greater than 0.", ex.getMessage());
+    }
+
+    @Test
+    void constructorRejectsNegativeAge() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> new Player(1, "Ace", -2));
+
+        assertEquals("Age must be greater than 0.", ex.getMessage());
+    }
+
+    @Test
+    void toStringIncludesAllFields() {
+        Player player = new Player(42, "Hero", 19);
+
+        assertEquals("Player{id=42, nickname='Hero', age=19}", player.toString());
+    }
 }

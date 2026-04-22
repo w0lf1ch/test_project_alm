@@ -1,47 +1,41 @@
-import org.example.Main;
+package org.example;
+
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MainTest {
 
-    /**
-     * Test for the main method in Main class.
-     * The main method is responsible for launching the tournament registration system,
-     * displaying menu options, and handling user input to interact with the system.
-     */
-
     @Test
-    void testMainShowsMenuAndTerminatesProperly() {
-        // Simulate user input to exercise main method functionality
-        // The input sequence includes a valid tournament name, max players, entry fee,
-        // a menu choice, and the exit option.
-        String simulatedInput = """
-                Test Tournament
-                10
-                100.0
-                0
-                """;
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(simulatedInput.getBytes());
-        System.setIn(inputStream);
+    void mainRunsHappyPathAndExits() {
+        String input = String.join(System.lineSeparator(),
+                "Test Tournament",
+                "2",
+                "100.0",
+                "0") + System.lineSeparator();
 
-        // Capture the output produced by the main method
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(outputStream));
+        InputStream originalIn = System.in;
+        PrintStream originalOut = System.out;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
 
-        // Execute main method
-        Main.main(new String[]{});
+        try {
+            System.setIn(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
+            System.setOut(new PrintStream(output));
 
-        // The output should include the tournament registration system menu and confirmation
-        // that the program finished after the termination choice.
-        String output = outputStream.toString();
-        assertTrue(output.contains("=== Tournament Registration System ==="));
-        assertTrue(output.contains("Enter tournament name:"));
-        assertTrue(output.contains("Program finished."));
+            Main.main(new String[0]);
+        } finally {
+            System.setOut(originalOut);
+            System.setIn(originalIn);
+        }
+
+        String console = output.toString(StandardCharsets.UTF_8);
+        assertTrue(console.contains("=== Tournament Registration System ==="));
+        assertTrue(console.contains("Program finished."));
     }
 }

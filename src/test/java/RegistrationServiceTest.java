@@ -1,194 +1,199 @@
-import org.example.Player;
-import org.example.RegistrationService;
-import org.example.Tournament;
+package org.example;
+
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class RegistrationServiceTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-    /**
-     * This class tests the `registerPlayer` method of the `RegistrationService` class.
-     * The method is responsible for registering a `Player` to a `Tournament`, given
-     * that all conditions are met (e.g., player is of eligible age, tournament is open,
-     * tournament is not full, etc.).
-     */
+class RegistrationServiceTest {
+
+    private final RegistrationService service = new RegistrationService();
 
     @Test
-    public void testRegisterPlayer_SuccessfulRegistration() {
-        // Arrange
-        RegistrationService registrationService = new RegistrationService();
-        Player player = new Player(1, "Player1", 20);
-        Tournament tournament = new Tournament("Tournament1", 10, 50.0);
+    void addPlayerToSystemRejectsNullPlayersList() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.addPlayerToSystem(null, new Player(1, "A", 20)));
 
-        // Act
-        registrationService.registerPlayer(player, tournament);
-
-        // Assert
-        assertTrue(tournament.hasPlayer(player.getId()));
-        assertEquals(9, tournament.getAvailableSlots());
+        assertEquals("Players list cannot be null.", ex.getMessage());
     }
 
     @Test
-    public void testRegisterPlayer_PlayerIsNull() {
-        // Arrange
-        RegistrationService registrationService = new RegistrationService();
-        Tournament tournament = new Tournament("Tournament1", 10, 50.0);
+    void addPlayerToSystemRejectsNullPlayer() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.addPlayerToSystem(new ArrayList<>(), null));
 
-        // Assert
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            // Act
-            registrationService.registerPlayer(null, tournament);
-        });
-        assertEquals("Player cannot be null.", exception.getMessage());
+        assertEquals("Player cannot be null.", ex.getMessage());
     }
 
     @Test
-    public void testRegisterPlayer_TournamentIsNull() {
-        // Arrange
-        RegistrationService registrationService = new RegistrationService();
-        Player player = new Player(1, "Player1", 20);
+    void addPlayerToSystemRejectsDuplicateId() {
+        List<Player> players = new ArrayList<>();
+        players.add(new Player(1, "A", 20));
 
-        // Assert
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            // Act
-            registrationService.registerPlayer(player, null);
-        });
-        assertEquals("Tournament cannot be null.", exception.getMessage());
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.addPlayerToSystem(players, new Player(1, "B", 22)));
+
+        assertEquals("Player with this ID already exists.", ex.getMessage());
+        assertEquals(1, players.size());
     }
 
     @Test
-    public void testRegisterPlayer_PlayerUnderage() {
-        // Arrange
-        RegistrationService registrationService = new RegistrationService();
-        Player player = new Player(1, "Player1", 15);
-        Tournament tournament = new Tournament("Tournament1", 10, 50.0);
+    void addPlayerToSystemAddsUniquePlayer() {
+        List<Player> players = new ArrayList<>();
+        Player player = new Player(2, "A", 20);
 
-        // Assert
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            // Act
-            registrationService.registerPlayer(player, tournament);
-        });
-        assertEquals("Player must be at least 16 years old.", exception.getMessage());
+        service.addPlayerToSystem(players, player);
+
+        assertEquals(1, players.size());
+        assertEquals(player, players.get(0));
     }
 
     @Test
-    public void testRegisterPlayer_TournamentIsClosed() {
-        // Arrange
-        RegistrationService registrationService = new RegistrationService();
-        Player player = new Player(1, "Player1", 20);
-        Tournament tournament = new Tournament("Tournament1", 10, 50.0);
+    void findPlayerByIdRejectsNullList() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.findPlayerById(null, 1));
+
+        assertEquals("Players list cannot be null.", ex.getMessage());
+    }
+
+    @Test
+    void findPlayerByIdReturnsMatchingPlayer() {
+        List<Player> players = new ArrayList<>();
+        Player expected = new Player(3, "FindMe", 20);
+        players.add(new Player(1, "A", 20));
+        players.add(expected);
+
+        Player actual = service.findPlayerById(players, 3);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void findPlayerByIdReturnsNullWhenMissing() {
+        List<Player> players = List.of(new Player(1, "A", 20));
+
+        Player result = service.findPlayerById(players, 99);
+
+        assertNull(result);
+    }
+
+    @Test
+    void registerPlayerRejectsNullPlayer() {
+        Tournament tournament = new Tournament("Cup", 2, 10.0);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.registerPlayer(null, tournament));
+
+        assertEquals("Player cannot be null.", ex.getMessage());
+    }
+
+    @Test
+    void registerPlayerRejectsNullTournament() {
+        Player player = new Player(1, "A", 20);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.registerPlayer(player, null));
+
+        assertEquals("Tournament cannot be null.", ex.getMessage());
+    }
+
+    @Test
+    void registerPlayerRejectsUnderagePlayer() {
+        Tournament tournament = new Tournament("Cup", 2, 10.0);
+        Player player = new Player(1, "A", 15);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.registerPlayer(player, tournament));
+
+        assertEquals("Player must be at least 16 years old.", ex.getMessage());
+    }
+
+    @Test
+    void registerPlayerRejectsWhenTournamentClosed() {
+        Tournament tournament = new Tournament("Cup", 2, 10.0);
         tournament.closeRegistration();
+        Player player = new Player(1, "A", 20);
 
-        // Assert
-        Exception exception = assertThrows(IllegalStateException.class, () -> {
-            // Act
-            registrationService.registerPlayer(player, tournament);
-        });
-        assertEquals("Registration is closed.", exception.getMessage());
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.registerPlayer(player, tournament));
+
+        assertEquals("Registration is closed.", ex.getMessage());
     }
 
     @Test
-    public void testRegisterPlayer_TournamentIsFull() {
-        // Arrange
-        RegistrationService registrationService = new RegistrationService();
-        Player player = new Player(1, "Player1", 20);
-        Tournament tournament = new Tournament("Tournament1", 1, 50.0);
-        tournament.addPlayer(new Player(2, "ExistingPlayer", 25));
+    void registerPlayerRejectsWhenTournamentFull() {
+        Tournament tournament = new Tournament("Cup", 1, 10.0);
+        tournament.addPlayer(new Player(9, "Existing", 20));
+        Player player = new Player(1, "A", 20);
 
-        // Assert
-        Exception exception = assertThrows(IllegalStateException.class, () -> {
-            // Act
-            registrationService.registerPlayer(player, tournament);
-        });
-        assertEquals("Tournament is already full.", exception.getMessage());
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.registerPlayer(player, tournament));
+
+        assertEquals("Tournament is already full.", ex.getMessage());
     }
 
     @Test
-    public void testRegisterPlayer_PlayerAlreadyRegistered() {
-        // Arrange
-        RegistrationService registrationService = new RegistrationService();
-        Player player = new Player(1, "Player1", 20);
-        Tournament tournament = new Tournament("Tournament1", 10, 50.0);
+    void registerPlayerRejectsAlreadyRegisteredPlayer() {
+        Tournament tournament = new Tournament("Cup", 2, 10.0);
+        Player player = new Player(1, "A", 20);
         tournament.addPlayer(player);
 
-        // Assert
-        Exception exception = assertThrows(IllegalStateException.class, () -> {
-            // Act
-            registrationService.registerPlayer(player, tournament);
-        });
-        assertEquals("Player is already registered.", exception.getMessage());
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.registerPlayer(player, tournament));
+
+        assertEquals("Player is already registered.", ex.getMessage());
     }
+
     @Test
-    public void testRegisterPlayer_PlayerHasInvalidAge() {
-        // Arrange
-        RegistrationService registrationService = new RegistrationService();
-        Player player = new Player(1, "Player1", 15); // Возраст меньше 16, чтобы пройти проверку конструктора
-        Tournament tournament = new Tournament("Tournament1", 10, 50.0);
+    void registerPlayerAcceptsPlayerAtMinimumAge() {
+        Tournament tournament = new Tournament("Cup", 2, 10.0);
+        Player player = new Player(1, "A", 16);
 
-        // Act & Assert
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            registrationService.registerPlayer(player, tournament);
-        });
+        service.registerPlayer(player, tournament);
 
-        // Проверяем корректность сообщения об исключении
-        assertEquals("Player must be at least 16 years old.", exception.getMessage());
-
-        // Убеждаемся, что турнир остался пустым
-        assertTrue(tournament.getRegisteredPlayers().isEmpty(), "No players should be registered in the tournament.");
+        assertTrue(tournament.hasPlayer(1));
+        assertEquals(1, tournament.getRegisteredPlayers().size());
+        assertEquals(1, tournament.getAvailableSlots());
     }
+
     @Test
-    public void testRegisterPlayer_DuplicatePlayerIdWithDifferentName() {
-        // Arrange
-        RegistrationService registrationService = new RegistrationService();
-        Tournament tournament = new Tournament("Tournament1", 10, 50.0);
+    void registerPlayerSuccessfullyRegistersEligiblePlayer() {
+        Tournament tournament = new Tournament("Cup", 3, 10.0);
+        Player player = new Player(7, "A", 25);
 
-        Player player1 = new Player(1, "Player1", 20);
-        Player player2 = new Player(1, "Player2", 20); // Тот же id, другое имя
+        service.registerPlayer(player, tournament);
 
-        tournament.addPlayer(player1);
-
-        // Assert
-        Exception exception = assertThrows(IllegalStateException.class, () -> {
-            // Act
-            registrationService.registerPlayer(player2, tournament);
-        });
-        assertEquals("Player is already registered.", exception.getMessage());
+        assertTrue(tournament.hasPlayer(7));
+        assertEquals(1, tournament.getRegisteredPlayers().size());
+        assertEquals(TournamentStatus.OPEN, tournament.getStatus());
     }
+
     @Test
-    public void testRegisterPlayer_MultiplePlayersUntilFull() {
-        // Arrange
-        RegistrationService registrationService = new RegistrationService();
-        Tournament tournament = new Tournament("Tournament1", 3, 50.0); // Лимит: 3 игрока
+    void registerPlayerChecksAgeBeforeTournamentStatus() {
+        Tournament tournament = new Tournament("Cup", 2, 10.0);
+        tournament.closeRegistration();
+        Player underage = new Player(1, "A", 15);
 
-        Player player1 = new Player(1, "Player1", 20);
-        Player player2 = new Player(2, "Player2", 22);
-        Player player3 = new Player(3, "Player3", 25);
-        Player player4 = new Player(4, "Player4", 26); // Лишний игрок
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.registerPlayer(underage, tournament));
 
-        // Act
-        registrationService.registerPlayer(player1, tournament);
-        registrationService.registerPlayer(player2, tournament);
-        registrationService.registerPlayer(player3, tournament);
-
-        // Assert: Добавление четвёртого игрока не допускается
-        Exception exception = assertThrows(IllegalStateException.class, () -> {
-            registrationService.registerPlayer(player4, tournament);
-        });
-        assertEquals("Tournament is already full.", exception.getMessage());
+        assertEquals("Player must be at least 16 years old.", ex.getMessage());
     }
+
     @Test
-    public void testRegisterPlayer_MinimumEligibleAge() {
-        // Arrange
-        RegistrationService registrationService = new RegistrationService();
-        Player player = new Player(1, "Player1", 16); // Ровно 16 лет
-        Tournament tournament = new Tournament("Tournament1", 10, 50.0);
+    void registerPlayerChecksFullBeforeDuplicate() {
+        Tournament tournament = new Tournament("Cup", 1, 10.0);
+        Player player = new Player(1, "A", 20);
+        tournament.addPlayer(player);
 
-        // Act
-        registrationService.registerPlayer(player, tournament);
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.registerPlayer(player, tournament));
 
-        // Assert
-        assertTrue(tournament.hasPlayer(player.getId()));
-        assertEquals(9, tournament.getAvailableSlots());
+        assertEquals("Tournament is already full.", ex.getMessage());
     }
 }

@@ -26,6 +26,19 @@ public class TournamentTest {
         assertEquals(1, registeredPlayers.size());
         assertTrue(registeredPlayers.contains(player));
     }
+    @Test
+    public void testTournament_InvalidNumberOfSlots() {
+        // Arrange
+        final int INVALID_MAX_PLAYERS = -5;
+        final double VALID_ENTRY_FEE = 50.0;
+
+        // Assert
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            // Act
+            new Tournament("Tournament1", INVALID_MAX_PLAYERS, VALID_ENTRY_FEE);
+        });
+        assertEquals("Max players must be greater than 0.", exception.getMessage());
+    }
 
     @Test
     public void testAddPlayerUpdatesStatusToFullWhenMaxPlayersReached() {
